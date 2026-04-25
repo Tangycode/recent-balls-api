@@ -1,0 +1,7 @@
+{
+  "innings_id": "I003",
+  "limit": 12,
+  "ball_events": [
+    {"over": 10, "ball_in_over": 1, "over_ball": "10.1", "striker": "X", "bowler": "Y", "runs": 2, "extras": 1, "extra_type": "no_ball", "wicket": 0}
+  ]
+}
