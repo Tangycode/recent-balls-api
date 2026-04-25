@@ -1,51 +1,52 @@
-# recent-balls-api
-The Recent Balls API returns the most recent ball events from a cricket match in a structured format for live dashboard and frontend use. It is integration-ready, fully payload-driven, and designed to work within the Khel AI MVP system without relying on any hardcoded or demo data.
+Purpose
 
-Features
-Returns latest N balls (configurable limit)
-Accepts live ball-by-ball payload
-Chronological sorting of deliveries
-Frontend-ready JSON output
-Stateless and scalable design
-Logic separated from route layer
+Returns the latest N ball events (1–12) in correct chronological order with full match context.
+
 Endpoint
 
 POST /recent-balls
 
-Request
+Input Schema
+innings_id (string)
+limit (1–12)
+ball_events (array)
+Output Schema
+innings_id
+recent_balls[]:
+over_ball
+striker
+bowler
+runs
+extras
+wicket
+label
+Sample Request
+
+(see test_payloads/normal.json)
+
+Sample Response
 {
-  "match_id": "match_001",
-  "innings": 1,
-  "limit": 6,
-  "balls": [
+  "innings_id": "I001",
+  "recent_balls": [
     {
-      "ball": 12.1,
-      "runs_off_bat": 1,
+      "over_ball": "1.6",
+      "striker": "A",
+      "bowler": "B",
+      "runs": 0,
       "extras": 0,
-      "extra_type": null,
-      "wicket": false
+      "wicket": 1,
+      "label": "WICKET"
     }
   ]
 }
-Response
-{
-  "status": "success",
-  "data": {
-    "match_id": "match_001",
-    "innings": 1,
-    "limit": 6,
-    "recent_balls": [
-      {
-        "ball": 12.1,
-        "runs": 1,
-        "extras": 0,
-        "extra_type": null,
-        "wicket": false,
-        "total": 1
-      }
-    ]
-  }
-}
-
-Key Improvement
-Moved from static/demo data → fully payload-driven, stateless API with clean service-layer architecture for integration into Khel AI MVP.
+Validation Errors
+Missing innings_id → 400
+Invalid limit → 400
+Empty ball_events → 400
+Duplicate balls → 400
+Invalid sequence → 400
+Integration Notes
+Avoids float sorting issues
+Uses strict ordering via (over, ball_in_over)
+Supports Khel AI extended payload
+Frontend-ready JSON
