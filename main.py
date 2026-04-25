@@ -1,43 +1,51 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-
-from recent_balls_service import get_recent_balls
+from fastapi.middleware.cors import CORSMiddleware
+from schemas import RecentBallsRequest
+from services import validate_ball_events, get_recent_balls
 
 app = FastAPI()
 
-# -----------------------------
-# Request Schema (Payload-based)
-# -----------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class BallEvent(BaseModel):
-    ball: float
-    runs_off_bat: int
-    extras: int = 0
-    extra_type: Optional[str] = None
-    wicket: bool = False
+@app.get("/")
+def root():
+    return {"message": "Recent Balls API is running"}
 
-class RecentBallsInput(BaseModel):
-    match_id: str
-    innings: int
-    balls: List[BallEvent]
-    limit: int = 6  # default: last over worth of balls
-
-# -----------------------------
-# API Route Layer
-# -----------------------------
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/recent-balls")
-def recent_balls(input_data: RecentBallsInput):
-    """
-    Returns most recent ball events for live match tracking.
-    Fully integration-ready (no hardcoded sample data).
-    """
+def recent_balls(request: RecentBallsRequest):
+
+    if not request.innings_id:
+        raise HTTPException(status_code=400, detail="Missing innings_id")
+
+    if request.limit is None:
+        raise HTTPException(status_code=400, detail="Missing limit")
+
+    if request.limit < 1 or request.limit > 12:
+        raise HTTPException(status_code=400, detail="Limit must be between 1 and 12")
+
+    if not request.ball_events:
+        raise HTTPException(status_code=400, detail="ball_events cannot be empty")
+
     try:
-        result = get_recent_balls(input_data.dict())
+        validate_ball_events(request.ball_events)
+        result = get_recent_balls(request.ball_events, request.limit)
+
         return {
-            "status": "success",
-            "data": result
+            "innings_id": request.innings_id,
+            "recent_balls": result
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal server error")
